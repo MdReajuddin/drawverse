@@ -4,9 +4,7 @@ return(
 
 <div style={{
 
-fontSize:"30px",
-
-color:"yellow"
+fontSize:"40px"
 
 }}>
 

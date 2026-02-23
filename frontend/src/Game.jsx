@@ -1,40 +1,78 @@
-import { useState, useEffect } from "react";
+import {useState,useEffect} from "react"
 
-import Whiteboard from "./Whiteboard";
-import VoiceChat from "./VoiceChat";
-import Timer from "./Timer";
+import Whiteboard from "./Whiteboard"
 
-import { io } from "socket.io-client";
+import Timer from "./Timer"
 
-const socket = io("http://localhost:5000");
+import "./style.css"
 
-export default function Game() {
+import {io} from "socket.io-client"
 
-const [name,setName] = useState("");
-const [room,setRoom] = useState("");
 
-const [joined,setJoined] = useState(false);
 
-const [players,setPlayers] = useState([]);
-const [scores,setScores] = useState({});
+const socket=io("https://drawverse-server.onrender.com")
 
-const [word,setWord] = useState("");
 
-const [chat,setChat] = useState([]);
-const [msg,setMsg] = useState("");
 
-const [time,setTime] = useState(60);
+export default function Game(){
+
+
+
+const savedName=
+
+localStorage.getItem("name")||""
+
+
+
+const [name,setName]=useState(savedName)
+
+const [room,setRoom]=useState("")
+
+const [joined,setJoined]=useState(false)
+
+
+
+const [players,setPlayers]=useState([])
+
+const [scores,setScores]=useState({})
+
+const [leaderboard,setLeaderboard]=useState({})
+
+
+
+const [word,setWord]=useState("")
+
+const [chat,setChat]=useState([])
+
+const [msg,setMsg]=useState("")
+
+const [time,setTime]=useState(60)
+
+const [round,setRound]=useState("")
+
+const [winner,setWinner]=useState("")
 
 
 
 function join(){
 
-socket.emit("joinRoom",{
-name:name,
-room:room
-});
 
-setJoined(true);
+
+localStorage.setItem("name",name)
+
+
+
+socket.emit("joinRoom",{
+
+name:name,
+
+room:room
+
+})
+
+
+
+setJoined(true)
 
 }
 
@@ -42,21 +80,37 @@ setJoined(true);
 
 useEffect(()=>{
 
-socket.on("players",setPlayers);
+socket.on("players",setPlayers)
 
-socket.on("scores",setScores);
+socket.on("scores",setScores)
 
-socket.on("word",setWord);
+socket.on("word",setWord)
 
-socket.on("timer",setTime);
+socket.on("timer",setTime)
+
+socket.on("round",setRound)
+
+socket.on("leaderboard",setLeaderboard)
+
+
 
 socket.on("chat",(m)=>{
 
-setChat(old=>[...old,m]);
+setChat(old=>[...old,m])
 
-});
+})
 
-},[]);
+
+
+socket.on("winner",(w)=>{
+
+setWinner(w)
+
+})
+
+
+
+},[])
 
 
 
@@ -64,36 +118,51 @@ if(!joined){
 
 return(
 
-<div style={{
-textAlign:"center",
-marginTop:"100px"
-}}>
+<div className="login">
 
-<h1>DrawVerse ULTRA</h1>
+<h1>🎮 DrawVerse GOD</h1>
+
+
 
 <input
+
 placeholder="Name"
-onChange={(e)=>setName(e.target.value)}
+
+value={name}
+
+onChange={(e)=>
+
+setName(e.target.value)
+
+}
+
 />
 
-<br/>
+
 
 <input
-placeholder="Room ID"
-onChange={(e)=>setRoom(e.target.value)}
+
+placeholder="Room"
+
+onChange={(e)=>
+
+setRoom(e.target.value)
+
+}
+
 />
 
-<br/>
+
 
 <button onClick={join}>
 
-Join Room
+Join
 
 </button>
 
 </div>
 
-);
+)
 
 }
 
@@ -103,11 +172,35 @@ return(
 
 <div className="container">
 
+
+
+{winner &&
+
+<div className="winner">
+
+{winner}
+
+</div>
+
+}
+
+
+
 <div className="sidebar">
 
-<h2>Room: {room}</h2>
+
+
+<h2>Room {room}</h2>
+
+
 
 <Timer time={time}/>
+
+
+
+<h3>{round}</h3>
+
+
 
 <h3>Players</h3>
 
@@ -116,12 +209,16 @@ return(
 players.map(p=>(
 
 <div key={p.id}>
+
 👤 {p.name}
+
 </div>
 
 ))
 
 }
+
+
 
 <h3>Scores</h3>
 
@@ -130,25 +227,49 @@ players.map(p=>(
 Object.keys(scores).map(n=>(
 
 <div key={n}>
-{n} : {scores[n]}
+
+{n}:{scores[n]}
+
 </div>
 
 ))
 
 }
 
+
+
+<h3>🏆 Global</h3>
+
+{
+
+Object.keys(leaderboard).map(n=>(
+
+<div key={n}>
+
+{n}:{leaderboard[n]}
+
+</div>
+
+))
+
+}
+
+
+
 <button
 
-onClick={()=>socket.emit("start",room)}
+onClick={()=>
+
+socket.emit("start",room)
+
+}
 
 >
 
-Start Game
+Start
 
 </button>
 
-
-<VoiceChat/>
 
 
 </div>
@@ -157,12 +278,25 @@ Start Game
 
 <div className="main">
 
-<h2>Word: {word}</h2>
+
+
+<h2>
+
+Word:{word}
+
+</h2>
+
+
 
 <Whiteboard
+
 socket={socket}
+
 room={room}
+
 />
+
+
 
 </div>
 
@@ -170,22 +304,15 @@ room={room}
 
 <div className="chat">
 
-<h3>Chat</h3>
 
-<div style={{
 
-height:"300px",
-overflow:"auto"
-
-}}>
+<div className="chatBox">
 
 {
 
 chat.map((c,i)=>(
 
-<div key={i}>
-{c}
-</div>
+<div key={i}>{c}</div>
 
 ))
 
@@ -194,15 +321,15 @@ chat.map((c,i)=>(
 </div>
 
 
-<input
 
-placeholder="Message"
+<input
 
 value={msg}
 
 onChange={(e)=>setMsg(e.target.value)}
 
 />
+
 
 
 <button
@@ -212,11 +339,14 @@ onClick={()=>{
 socket.emit("chat",{
 
 room:room,
-msg:msg
 
-});
+msg:msg,
 
-setMsg("");
+name:name
+
+})
+
+setMsg("")
 
 }}
 
@@ -226,8 +356,6 @@ Send
 
 </button>
 
-
-<br/>
 
 
 <input
@@ -241,27 +369,29 @@ if(e.key==="Enter"){
 socket.emit("guess",{
 
 room:room,
+
 guess:e.target.value,
+
 name:name
 
-});
+})
 
-e.target.value="";
+e.target.value=""
 
 }
 
 }}
 
->
+/>
 
-
-</input>
 
 
 </div>
 
+
+
 </div>
 
-);
+)
 
 }

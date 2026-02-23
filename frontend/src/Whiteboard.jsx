@@ -1,76 +1,186 @@
-import { useRef,useEffect,useState }
-from "react";
+import {useRef,useEffect,useState} from "react"
 
-export default function Whiteboard({socket,room}){
 
-const canvasRef = useRef();
 
-const drawing = useRef(false);
+export default function Whiteboard({
 
-const last = useRef({x:0,y:0});
+socket,
 
-const [color,setColor] = useState("#000");
-const [size,setSize] = useState(4);
+room
+
+}){
+
+const canvasRef=useRef(null)
+
+const drawing=useRef(false)
+
+
+
+const [color,setColor]=useState("#000000")
+
+const [size,setSize]=useState(5)
+
+
+
+const lastX=useRef(0)
+
+const lastY=useRef(0)
 
 
 
 useEffect(()=>{
 
-const canvas = canvasRef.current;
-
-const ctx = canvas.getContext("2d");
-
-canvas.width = 900;
-canvas.height = 500;
-
-ctx.lineCap="round";
 
 
-socket.on("draw",(d)=>{
+resize()
 
-ctx.strokeStyle=d.color;
 
-ctx.lineWidth=d.size;
 
-ctx.beginPath();
+window.addEventListener(
 
-ctx.moveTo(d.x0,d.y0);
+"resize",
 
-ctx.lineTo(d.x1,d.y1);
+resize
 
-ctx.stroke();
+)
 
-});
+
+
+socket.on("draw",
+
+drawLine)
+
 
 
 socket.on("clear",()=>{
 
+const ctx=
+
+canvasRef.current
+
+.getContext("2d")
+
+
+
 ctx.clearRect(
+
 0,0,
-900,500
-);
 
-});
+canvasRef.current.width,
+
+canvasRef.current.height
+
+)
+
+})
 
 
-},[]);
+
+},[])
+
+
+
+function resize(){
+
+canvasRef.current.width=600
+
+canvasRef.current.height=400
+
+}
+
+
+
+function pos(e){
+
+const rect=
+
+canvasRef.current
+
+.getBoundingClientRect()
+
+
+
+if(e.touches){
+
+return{
+
+x:e.touches[0].clientX-rect.left,
+
+y:e.touches[0].clientY-rect.top
+
+}
+
+}
+
+
+
+return{
+
+x:e.clientX-rect.left,
+
+y:e.clientY-rect.top
+
+}
+
+}
 
 
 
 function start(e){
 
-drawing.current=true;
+drawing.current=true
 
-const rect=
-canvasRef.current
-.getBoundingClientRect();
+const p=pos(e)
 
-last.current={
+lastX.current=p.x
 
-x:e.clientX-rect.left,
-y:e.clientY-rect.top
+lastY.current=p.y
 
-};
+}
+
+
+
+function move(e){
+
+if(!drawing.current)return
+
+
+
+const p=pos(e)
+
+
+
+const data={
+
+room,
+
+x0:lastX.current,
+
+y0:lastY.current,
+
+x1:p.x,
+
+y1:p.y,
+
+color,
+
+size
+
+}
+
+
+
+drawLine(data)
+
+
+
+socket.emit("draw",data)
+
+
+
+lastX.current=p.x
+
+lastY.current=p.y
 
 }
 
@@ -78,65 +188,35 @@ y:e.clientY-rect.top
 
 function stop(){
 
-drawing.current=false;
+drawing.current=false
 
 }
 
 
 
-function draw(e){
-
-if(!drawing.current) return;
-
-const rect=
-canvasRef.current
-.getBoundingClientRect();
-
-const x=
-e.clientX-rect.left;
-
-const y=
-e.clientY-rect.top;
+function drawLine(d){
 
 const ctx=
+
 canvasRef.current
-.getContext("2d");
+
+.getContext("2d")
 
 
-ctx.strokeStyle=color;
 
-ctx.lineWidth=size;
+ctx.strokeStyle=d.color
 
-
-ctx.beginPath();
-
-ctx.moveTo(
-last.current.x,
-last.current.y
-);
-
-ctx.lineTo(x,y);
-
-ctx.stroke();
+ctx.lineWidth=d.size
 
 
-socket.emit("draw",{
 
-room:room,
+ctx.beginPath()
 
-x0:last.current.x,
-y0:last.current.y,
+ctx.moveTo(d.x0,d.y0)
 
-x1:x,
-y1:y,
+ctx.lineTo(d.x1,d.y1)
 
-color:color,
-size:size
-
-});
-
-
-last.current={x,y};
+ctx.stroke()
 
 }
 
@@ -146,12 +226,47 @@ return(
 
 <div>
 
+
+
+<input
+
+type="color"
+
+onChange={(e)=>
+
+setColor(e.target.value)
+
+}
+
+/>
+
+
+
+<input
+
+type="range"
+
+min="1"
+
+max="20"
+
+onChange={(e)=>
+
+setSize(e.target.value)
+
+}
+
+/>
+
+
+
 <button
 
-onClick={()=>socket.emit(
-"clear",
-room
-)}
+onClick={()=>
+
+socket.emit("clear",room)
+
+}
 
 >
 
@@ -160,41 +275,47 @@ Clear
 </button>
 
 
-<input
-type="color"
-value={color}
-onChange={(e)=>setColor(e.target.value)}
-/>
-
-
-<input
-type="range"
-min="1"
-max="20"
-value={size}
-onChange={(e)=>setSize(e.target.value)}
-/>
-
-
-<br/>
-
 
 <canvas
 
 ref={canvasRef}
 
+
+
 onMouseDown={start}
+
+onMouseMove={move}
 
 onMouseUp={stop}
 
-onMouseMove={draw}
+
+
+onTouchStart={start}
+
+onTouchMove={move}
+
+onTouchEnd={stop}
+
+
+
+style={{
+
+border:"3px solid black",
+
+background:"white"
+
+}}
 
 >
 
+
+
 </canvas>
+
+
 
 </div>
 
-);
+)
 
 }
